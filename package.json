@@ -1,13 +1,12 @@
 {
-  "name": "moonkata-sync",
-  "displayName": "Moonkata Sync",
-  "description": "Sync reading position between VSCode and the Moonkata Reader Android app via Supabase",
-  "version": "0.0.1",
+  "name": "moonkata-reader-sync",
+  "displayName": "Moonkata Reader Sync",
+  "description": "Sync reading position between VS Code and the Moonkata Reader Android app via Supabase",
+  "version": "0.1.0",
   "publisher": "katalog",
-  "private": true,
   "repository": {
     "type": "git",
-    "url": "https://github.com/katalog/vscode-moonkata-sync"
+    "url": "https://github.com/katalog/vscode-moonkata-reader-sync"
   },
   "license": "MIT",
   "engines": {
@@ -17,11 +16,63 @@
     "Other"
   ],
   "keywords": [
+    "moonkata",
     "reading",
+    "reading position",
     "sync",
     "novel",
-    "supabase"
+    "supabase",
+    "syncthing"
   ],
-  "activationEvents": [],
-  "main": "./out/extension.js"
+  "activationEvents": [
+    "onLanguage:plaintext"
+  ],
+  "main": "./out/extension.js",
+  "contributes": {
+    "configuration": {
+      "title": "Moonkata Reader Sync",
+      "properties": {
+        "moonkataReaderSync.syncRootPath": {
+          "type": "string",
+          "default": "",
+          "description": "Moonkata Reader 앱과 공유하는 동기화 루트 폴더의 절대경로. 비워두면 .txt 파일을 처음 열 때 폴더 선택창으로 물어봅니다."
+        }
+      }
+    },
+    "commands": [
+      {
+        "command": "moonkata-reader-sync.setSharedSecret",
+        "title": "Moonkata Sync: 공유 시크릿 설정"
+      },
+      {
+        "command": "moonkata-reader-sync.testConnection",
+        "title": "Moonkata Sync: 연결 테스트"
+      },
+      {
+        "command": "moonkata-reader-sync.setSyncRoot",
+        "title": "Moonkata Sync: 동기화 루트 폴더 설정"
+      }
+    ]
+  },
+  "scripts": {
+    "vscode:prepublish": "npm run compile",
+    "compile": "tsc -p ./",
+    "watch": "tsc -watch -p ./",
+    "pretest": "npm run compile && npm run lint",
+    "lint": "eslint src",
+    "test": "vscode-test"
+  },
+  "dependencies": {
+    "jschardet": "^3.1.4"
+  },
+  "devDependencies": {
+    "@types/vscode": "^1.107.0",
+    "@types/mocha": "^10.0.10",
+    "@types/node": "22.x",
+    "typescript-eslint": "^8.48.1",
+    "eslint": "^9.39.1",
+    "typescript": "^5.9.3",
+    "@vscode/test-cli": "^0.0.12",
+    "@vscode/test-electron": "^2.5.2"
+  }
 }
