@@ -1,0 +1,27 @@
+{
+  "name": "moonkata-sync",
+  "displayName": "Moonkata Sync",
+  "description": "Sync reading position between VSCode and the Moonkata Reader Android app via Supabase",
+  "version": "0.0.1",
+  "publisher": "katalog",
+  "private": true,
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/katalog/vscode-moonkata-sync"
+  },
+  "license": "MIT",
+  "engines": {
+    "vscode": "^1.107.0"
+  },
+  "categories": [
+    "Other"
+  ],
+  "keywords": [
+    "reading",
+    "sync",
+    "novel",
+    "supabase"
+  ],
+  "activationEvents": [],
+  "main": "./out/extension.js"
+}
