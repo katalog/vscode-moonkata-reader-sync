@@ -187,8 +187,12 @@ export class PositionTracker {
 		const total = document.getText().length;
 		const currentPercent = total > 0 ? ((currentOffset / total) * 100).toFixed(1) : '0.0';
 		const remotePercent = total > 0 ? ((remoteOffset / total) * 100).toFixed(1) : '0.0';
+		// modal로 띄우는 이유: 기본(토스트) 알림은 화면 우측 하단에 포커스 없이 뜨기 때문에 Enter로
+		// 확인이 안 되고 마우스로 직접 눌러야 한다. modal은 화면 중앙에 뜨면서 바로 포커스를 가져가서
+		// Enter가 기본 액션('이동')을 누르는 것과 같아지고, Esc로 취소도 된다.
 		const choice = await vscode.window.showInformationMessage(
 			`현재 ${currentPercent}% 읽는 중 — 다른 기기는 ${remotePercent}%까지 읽으셨네요. 그 위치로 이동할까요?`,
+			{ modal: true },
 			'이동',
 		);
 		if (choice === '이동') {
