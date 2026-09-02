@@ -180,18 +180,19 @@ export class PositionTracker {
 		if (!remote || remote.charOffset - state.lastKnownOffset <= MIN_OFFSET_DIFF_TO_NOTIFY) {
 			return;
 		}
-		await this.notifyFurtherPosition(document, remote.charOffset);
+		await this.notifyFurtherPosition(document, state.lastKnownOffset, remote.charOffset);
 	}
 
-	private async notifyFurtherPosition(document: vscode.TextDocument, offset: number): Promise<void> {
+	private async notifyFurtherPosition(document: vscode.TextDocument, currentOffset: number, remoteOffset: number): Promise<void> {
 		const total = document.getText().length;
-		const percent = total > 0 ? ((offset / total) * 100).toFixed(1) : '0.0';
+		const currentPercent = total > 0 ? ((currentOffset / total) * 100).toFixed(1) : '0.0';
+		const remotePercent = total > 0 ? ((remoteOffset / total) * 100).toFixed(1) : '0.0';
 		const choice = await vscode.window.showInformationMessage(
-			`다른 기기에서 더 읽으셨어요 — ${percent}% 지점까지 읽으셨네요. 그 위치로 이동할까요?`,
+			`현재 ${currentPercent}% 읽는 중 — 다른 기기는 ${remotePercent}%까지 읽으셨네요. 그 위치로 이동할까요?`,
 			'이동',
 		);
 		if (choice === '이동') {
-			await this.jumpTo(document, offset);
+			await this.jumpTo(document, remoteOffset);
 		}
 	}
 
