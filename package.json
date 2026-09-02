@@ -2,7 +2,7 @@
   "name": "moonkata-reader-sync",
   "displayName": "Moonkata Reader Sync",
   "description": "Sync reading position between VS Code and the Moonkata Reader Android app via Supabase",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "publisher": "katalog",
   "repository": {
     "type": "git",
