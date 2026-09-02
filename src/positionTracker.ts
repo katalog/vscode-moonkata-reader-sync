@@ -7,6 +7,13 @@ import { checkAndOfferUtf8Conversion } from './encoding';
 /** 같은 위치에서 이만큼(1분) 안 움직이면 원격에도 체크포인트를 남긴다 — Android 쪽과 동일 값. */
 const CHECKPOINT_IDLE_MS = 60_000;
 
+/**
+ * 원격이 이만큼(문자 수) 넘게 앞서 있을 때만 "더 읽으셨어요" 팝업을 띄운다 — VSCode 커서 오프셋과
+ * 안드로이드 페이지 오프셋은 애초에 가리키는 단위가 달라서(문자 단위 vs 페이지 시작 지점) 실제로는
+ * 같은 곳을 읽고 있어도 수백 자 정도 어긋날 수 있다. Android 쪽과 동일 값.
+ */
+const MIN_OFFSET_DIFF_TO_NOTIFY = 500;
+
 interface DocState {
 	relativePath: string;
 	lastKnownOffset: number;
@@ -170,7 +177,7 @@ export class PositionTracker {
 			return;
 		}
 		const remote = await client.fetchPosition(state.relativePath);
-		if (!remote || remote.charOffset <= state.lastKnownOffset) {
+		if (!remote || remote.charOffset - state.lastKnownOffset <= MIN_OFFSET_DIFF_TO_NOTIFY) {
 			return;
 		}
 		await this.notifyFurtherPosition(document, remote.charOffset);
