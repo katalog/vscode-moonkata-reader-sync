@@ -4,8 +4,12 @@ import { ensureSyncRoot } from './syncRoot';
 import { SyncSecretManager } from './secretManager';
 import { checkAndOfferUtf8Conversion } from './encoding';
 
-/** 같은 위치에서 이만큼(1분) 안 움직이면 원격에도 체크포인트를 남긴다 — Android 쪽과 동일 값. */
-const CHECKPOINT_IDLE_MS = 60_000;
+/**
+ * 같은 위치에서 이만큼(5분) 안 움직이면 원격에도 체크포인트를 남긴다 — Android 쪽과 동일 값.
+ * 원래 1분이었는데, 사용자가 늘어날 걸 감안해 화면 이탈 시 즉시 반영 경로는 그대로 두고 이 간격만
+ * 늘려 원격 쓰기 빈도를 줄였다(Android-Text-Reader 저장소의 SYNC_MULTIUSER_PLAN.md 스테이지 2).
+ */
+const CHECKPOINT_IDLE_MS = 300_000;
 
 /**
  * 원격이 이만큼(문자 수) 넘게 앞서 있을 때만 "더 읽으셨어요" 팝업을 띄운다 — VSCode 커서 오프셋과
@@ -14,10 +18,18 @@ const CHECKPOINT_IDLE_MS = 60_000;
  */
 const MIN_OFFSET_DIFF_TO_NOTIFY = 500;
 
+/**
+ * 원격 조회(checkRemote) 최소 간격 — 탭 전환/창 포커스가 짧은 시간 안에 반복되면 그때마다 조회가
+ * 나갈 수 있어, 마지막 조회 후 이 시간 안에는 다시 조회하지 않는다. Android 쪽과 동일 값
+ * (SYNC_MULTIUSER_PLAN.md 스테이지 2).
+ */
+const REMOTE_FETCH_COOLDOWN_MS = 30_000;
+
 interface DocState {
 	relativePath: string;
 	lastKnownOffset: number;
 	lastRemoteSyncedOffset?: number;
+	lastRemoteFetchAt?: number;
 	checkpointTimer?: ReturnType<typeof setTimeout>;
 }
 
@@ -26,7 +38,7 @@ interface DocState {
  *
  * 커서가 움직일 때마다 매번 올리면 낭비라, 아래 경로로만 원격에 반영한다 — Android 앱의 체크포인트 +
  * 화면 이탈/복귀 모델과 대칭:
- * 1) 같은 위치에서 CHECKPOINT_IDLE_MS(1분) 이상 머무르면(체크포인트)
+ * 1) 같은 위치에서 CHECKPOINT_IDLE_MS(5분) 이상 머무르면(체크포인트)
  * 2) 이 파일이 편집창에서 안 보이게 되면(onDidChangeVisibleTextEditors) — 탭 전환/닫기
  * 3) VSCode 창이 OS 포커스를 잃으면(onDidChangeWindowState, focused: false) — 알트탭, 최소화, Win+D,
  *    가상 데스크톱 전환 전부 포함. (2)와 (3)을 둘 다 걸어야 하는 이유는 서로 다른 레이어라서다 —
@@ -172,10 +184,15 @@ export class PositionTracker {
 		if (!state) {
 			return;
 		}
+		const now = Date.now();
+		if (state.lastRemoteFetchAt !== undefined && now - state.lastRemoteFetchAt < REMOTE_FETCH_COOLDOWN_MS) {
+			return;
+		}
 		const client = await this.secretManager.getVerifiedClient();
 		if (!client) {
 			return;
 		}
+		state.lastRemoteFetchAt = now;
 		const remote = await client.fetchPosition(state.relativePath);
 		if (!remote || remote.charOffset - state.lastKnownOffset <= MIN_OFFSET_DIFF_TO_NOTIFY) {
 			return;

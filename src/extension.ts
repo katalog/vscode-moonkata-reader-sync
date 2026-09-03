@@ -2,6 +2,7 @@ import * as vscode from 'vscode';
 import { SyncSecretManager } from './secretManager';
 import { PositionTracker } from './positionTracker';
 import { promptForSyncRoot } from './syncRoot';
+import { showPairingQr } from './pairingQr';
 
 let tracker: PositionTracker | undefined;
 
@@ -19,6 +20,8 @@ export function activate(context: vscode.ExtensionContext) {
 				vscode.window.showInformationMessage(`동기화 루트를 설정했습니다: ${chosen}`);
 			}
 		}),
+		vscode.commands.registerCommand('moonkata-reader-sync.showPairingQr', () => showPairingQr(secretManager)),
+		vscode.commands.registerCommand('moonkata-reader-sync.forgetSecret', () => secretManager.forgetSecret()),
 	);
 
 	void secretManager.refreshStatusBar();

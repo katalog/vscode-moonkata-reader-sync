@@ -42,6 +42,25 @@ export class SyncSecretManager {
 		return new ReadingPositionSyncClient(secret);
 	}
 
+	/** 시크릿을 저장만 하고 상태 표시줄을 갱신한다 — 검증(testConnection)은 호출부가 따로 트리거. */
+	async setSecret(value: string): Promise<void> {
+		await this.context.secrets.store(SHARED_SECRET_KEY, value);
+		await this.refreshStatusBar();
+	}
+
+	/**
+	 * 저장된 시크릿을 완전히 지운다 — "Moonkata Sync: 연결 해제". `context.secrets`는 확장을 재설치해도
+	 * 안 지워지는 OS 보안 저장소라서, 예전에 페어링해둔 상태가 계속 남아있을 수 있다. QR로 새로
+	 * 페어링하기 전에 깨끗한 상태에서 다시 시작하고 싶을 때(예: 새 기기로 처음부터 테스트) 쓴다 —
+	 * 이후 "QR로 연결"을 실행하면 재사용할 기존 시크릿이 없으니 진짜 새 시크릿을 생성한다.
+	 */
+	async forgetSecret(): Promise<void> {
+		await this.context.secrets.delete(SHARED_SECRET_KEY);
+		await this.context.secrets.delete(VERIFIED_SECRET_KEY);
+		await this.refreshStatusBar();
+		vscode.window.showInformationMessage('저장된 시크릿을 지웠습니다 — 동기화가 꺼졌습니다.');
+	}
+
 	async promptForSecret(): Promise<void> {
 		const value = await vscode.window.showInputBox({
 			prompt: 'Moonkata Reader 앱 설정 화면에서 사용 중인 것과 같은 공유 시크릿을 입력하세요.',
@@ -51,8 +70,7 @@ export class SyncSecretManager {
 		if (value === undefined || value.length === 0) {
 			return;
 		}
-		await this.context.secrets.store(SHARED_SECRET_KEY, value);
-		await this.refreshStatusBar();
+		await this.setSecret(value);
 		const choice = await vscode.window.showInformationMessage(
 			'공유 시크릿을 저장했습니다. 아직 연결 테스트 전이라 동기화는 꺼져 있습니다.',
 			'지금 테스트',

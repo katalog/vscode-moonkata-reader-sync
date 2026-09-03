@@ -2,3 +2,7 @@ node_modules/
 out/
 *.vsix
 .vscode-test/
+
+# scripts/generate-supabase-config.js가 매 빌드 시 생성 — SYNC_MULTIUSER_PLAN.md 스테이지 3 참고
+src/supabaseConfig.ts
+.env.local
