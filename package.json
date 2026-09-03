@@ -2,7 +2,7 @@
   "name": "moonkata-reader-sync",
   "displayName": "Moonkata Reader Sync",
   "description": "Sync reading position between VS Code and the Moonkata Reader Android app via Supabase",
-  "version": "1.5.0",
+  "version": "1.5.1",
   "publisher": "katalog",
   "repository": {
     "type": "git",
@@ -55,6 +55,10 @@
       {
         "command": "moonkata-reader-sync.showPairingQr",
         "title": "Moonkata Sync: QR로 연결"
+      },
+      {
+        "command": "moonkata-reader-sync.forgetSecret",
+        "title": "Moonkata Sync: 연결 해제"
       }
     ]
   },

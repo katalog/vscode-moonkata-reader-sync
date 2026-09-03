@@ -21,6 +21,7 @@ export function activate(context: vscode.ExtensionContext) {
 			}
 		}),
 		vscode.commands.registerCommand('moonkata-reader-sync.showPairingQr', () => showPairingQr(secretManager)),
+		vscode.commands.registerCommand('moonkata-reader-sync.forgetSecret', () => secretManager.forgetSecret()),
 	);
 
 	void secretManager.refreshStatusBar();
