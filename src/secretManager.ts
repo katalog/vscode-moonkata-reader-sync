@@ -42,6 +42,12 @@ export class SyncSecretManager {
 		return new ReadingPositionSyncClient(secret);
 	}
 
+	/** 시크릿을 저장만 하고 상태 표시줄을 갱신한다 — 검증(testConnection)은 호출부가 따로 트리거. */
+	async setSecret(value: string): Promise<void> {
+		await this.context.secrets.store(SHARED_SECRET_KEY, value);
+		await this.refreshStatusBar();
+	}
+
 	async promptForSecret(): Promise<void> {
 		const value = await vscode.window.showInputBox({
 			prompt: 'Moonkata Reader 앱 설정 화면에서 사용 중인 것과 같은 공유 시크릿을 입력하세요.',
@@ -51,8 +57,7 @@ export class SyncSecretManager {
 		if (value === undefined || value.length === 0) {
 			return;
 		}
-		await this.context.secrets.store(SHARED_SECRET_KEY, value);
-		await this.refreshStatusBar();
+		await this.setSecret(value);
 		const choice = await vscode.window.showInformationMessage(
 			'공유 시크릿을 저장했습니다. 아직 연결 테스트 전이라 동기화는 꺼져 있습니다.',
 			'지금 테스트',
