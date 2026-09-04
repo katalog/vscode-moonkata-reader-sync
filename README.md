@@ -1,10 +1,13 @@
 # Moonkata Reader Sync
 
 A VS Code extension that syncs your reading position (cursor location in a `.txt` novel) with the
-[Moonkata Reader](https://github.com/katalog/Android-Text-Reader) Android app, via Supabase. It
+[Moonkata Reader](https://github.com/katalog/android-moonkata-reader) Android app, via Supabase. It
 assumes the two devices' folders are already kept in sync by something like Syncthing — this
 extension only syncs *how far you've read*, so you can pick up on either device from wherever you
 left off on the other.
+
+Part of the [moonkata-reader-project](https://github.com/katalog/moonkata-reader-project) umbrella —
+the PC file-sync companion is a separate repo, [go-moonkata-reader-sync-server](https://github.com/katalog/go-moonkata-reader-sync-server).
 
 ## Features
 
@@ -44,7 +47,7 @@ store), entered through the **공유 시크릿 설정** command.
 
 Full design notes (why character offsets, why a shared Supabase table, why these specific sync
 triggers and not simpler ones) live in the Moonkata Reader repo's plan document:
-[Android-Text-Reader/.docs/VSCODE_SYNC_PLAN.md](https://github.com/katalog/Android-Text-Reader/blob/main/.docs/VSCODE_SYNC_PLAN.md).
+[android-moonkata-reader/.docs/VSCODE_SYNC_PLAN.md](https://github.com/katalog/android-moonkata-reader/blob/main/.docs/VSCODE_SYNC_PLAN.md).
 
 ## Requirements
 

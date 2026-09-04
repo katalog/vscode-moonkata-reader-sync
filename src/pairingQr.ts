@@ -4,7 +4,7 @@ import * as QRCode from 'qrcode';
 import { SyncSecretManager } from './secretManager';
 
 /**
- * QR 페어링(Android-Text-Reader 저장소의 .docs/SYNC_MULTIUSER_PLAN.md 스테이지 5) — Android 앱
+ * QR 페어링(android-moonkata-reader 저장소의 .docs/SYNC_MULTIUSER_PLAN.md 스테이지 5) — Android 앱
  * 퀵설정의 "QR로 연결"이 이 QR을 스캔해 공유 시크릿을 자동으로 채운다.
  *
  * 이미 시크릿이 있으면 그대로 QR로 보여준다 — 매번 새로 만들면 이미 페어링된 다른 기기(예전에 스캔한

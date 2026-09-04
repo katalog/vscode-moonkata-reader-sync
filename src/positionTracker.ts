@@ -7,7 +7,7 @@ import { checkAndOfferUtf8Conversion } from './encoding';
 /**
  * 같은 위치에서 이만큼(5분) 안 움직이면 원격에도 체크포인트를 남긴다 — Android 쪽과 동일 값.
  * 원래 1분이었는데, 사용자가 늘어날 걸 감안해 화면 이탈 시 즉시 반영 경로는 그대로 두고 이 간격만
- * 늘려 원격 쓰기 빈도를 줄였다(Android-Text-Reader 저장소의 SYNC_MULTIUSER_PLAN.md 스테이지 2).
+ * 늘려 원격 쓰기 빈도를 줄였다(android-moonkata-reader 저장소의 SYNC_MULTIUSER_PLAN.md 스테이지 2).
  */
 const CHECKPOINT_IDLE_MS = 300_000;
 
