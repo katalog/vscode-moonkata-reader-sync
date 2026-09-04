@@ -3,8 +3,9 @@ import * as fs from 'fs/promises';
 import * as jschardet from 'jschardet';
 
 /**
- * 엄격한 UTF-8 바이트 시퀀스 검증 — chardet류로 추측하는 게 아니라 디코딩 자체가 깨지는지로
- * 판단한다(§열린 질문 4 결론). 오버롱 인코딩과 서로게이트 범위도 걸러내는 RFC 3629 기준 검증.
+ * Strict UTF-8 byte-sequence validation — rather than guessing via something like chardet, this
+ * decides based on whether decoding itself actually breaks (see §Open Question 4's conclusion).
+ * RFC 3629-compliant validation that also rejects overlong encodings and the surrogate range.
  */
 export function isValidUtf8(buffer: Buffer): boolean {
 	let i = 0;
@@ -54,7 +55,7 @@ export function isValidUtf8(buffer: Buffer): boolean {
 
 function mapToWhatwgEncodingLabel(jschardetLabel: string): string {
 	const lower = jschardetLabel.toLowerCase();
-	// CP949/MS949/UHC는 EUC-KR의 확장 슈퍼셋 — Android EncodingDetector가 이 셋을 같은 부류로 다루는 것과 대응.
+	// CP949/MS949/UHC are extended supersets of EUC-KR — matches how the Android app's EncodingDetector treats these three as one family.
 	if (lower === 'cp949' || lower === 'ms949' || lower === 'uhc') {
 		return 'euc-kr';
 	}
@@ -62,10 +63,11 @@ function mapToWhatwgEncodingLabel(jschardetLabel: string): string {
 }
 
 /**
- * 파일을 열 때(정확히는 다시 보이게 될 때) 원본 바이트가 유효한 UTF-8인지 검사하고, 아니면 변환을
- * 물어본다(§열린 질문 4 결론). 동의하면 파일 자체를 UTF-8로 덮어써 그 파일의 인코딩 문제를 근본적으로
- * 해소한다 — Syncthing이 이 변경분을 Android 쪽에도 퍼뜨리고, Android의 EncodingDetector도 UTF-8로
- * 정상 인식하게 된다.
+ * When a file is opened (more precisely, becomes visible again), checks whether the raw bytes are
+ * valid UTF-8, and if not, offers to convert it (see §Open Question 4's conclusion). If the user
+ * agrees, the file itself is overwritten as UTF-8, fixing that file's encoding problem at the root —
+ * Syncthing then propagates this change to the Android side too, where its EncodingDetector will
+ * also correctly recognize it as UTF-8.
  */
 export async function checkAndOfferUtf8Conversion(document: vscode.TextDocument): Promise<void> {
 	if (document.uri.scheme !== 'file') {
@@ -88,22 +90,22 @@ export async function checkAndOfferUtf8Conversion(document: vscode.TextDocument)
 	}
 
 	const choice = await vscode.window.showWarningMessage(
-		`"${document.uri.fsPath.split(/[\\/]/).pop()}" 파일은 UTF-8이 아닌 것 같습니다(${label}). UTF-8로 변환할까요? 원본 인코딩으로는 되돌릴 수 없습니다.`,
-		'UTF-8로 변환',
-		'무시',
+		`"${document.uri.fsPath.split(/[\\/]/).pop()}" doesn't look like UTF-8 (detected: ${label}). Convert it to UTF-8? This can't be undone back to the original encoding.`,
+		'Convert to UTF-8',
+		'Ignore',
 	);
-	if (choice !== 'UTF-8로 변환') {
+	if (choice !== 'Convert to UTF-8') {
 		return;
 	}
 
 	try {
 		const decoded = new TextDecoder(mapToWhatwgEncodingLabel(label), { fatal: false }).decode(raw);
 		await fs.writeFile(document.uri.fsPath, Buffer.from(decoded, 'utf8'));
-		vscode.window.showInformationMessage('UTF-8로 변환했습니다.');
+		vscode.window.showInformationMessage('Converted to UTF-8.');
 		if (vscode.window.activeTextEditor?.document === document) {
 			await vscode.commands.executeCommand('workbench.action.files.revert');
 		}
 	} catch (e) {
-		vscode.window.showErrorMessage(`변환 실패: ${e instanceof Error ? e.message : String(e)}`);
+		vscode.window.showErrorMessage(`Conversion failed: ${e instanceof Error ? e.message : String(e)}`);
 	}
 }

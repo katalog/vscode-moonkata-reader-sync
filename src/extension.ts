@@ -17,7 +17,7 @@ export function activate(context: vscode.ExtensionContext) {
 			const workspaceFolder = vscode.workspace.workspaceFolders?.[0]?.uri;
 			const chosen = await promptForSyncRoot(workspaceFolder);
 			if (chosen) {
-				vscode.window.showInformationMessage(`동기화 루트를 설정했습니다: ${chosen}`);
+				vscode.window.showInformationMessage(`Sync root set to: ${chosen}`);
 			}
 		}),
 		vscode.commands.registerCommand('moonkata-reader-sync.showPairingQr', () => showPairingQr(secretManager)),

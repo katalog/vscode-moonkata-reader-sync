@@ -1,16 +1,18 @@
 import * as path from 'path';
 
 /**
- * 두 기기를 매칭하는 키 정규화 규칙(.docs/VSCODE_SYNC_PLAN.md §3) — 구분자 통일 → NFC 정규화 →
- * 소문자화 순서. Android 앱의 data/sync/RelativePath.kt와 반드시 같은 순서로 적용해야 매칭이 맞는다.
+ * The key-normalization rule used to match the two devices (.docs/VSCODE_SYNC_PLAN.md §3) — unify
+ * separators, then NFC-normalize, then lowercase, in that order. Must be applied in exactly this
+ * same order as the Android app's data/sync/RelativePath.kt or the two sides won't match.
  */
 export function normalizeRelativePath(rawPath: string): string {
 	return rawPath.replace(/\\/g, '/').normalize('NFC').toLowerCase();
 }
 
 /**
- * 동기화 루트 기준 상대경로를 계산해서 정규화한다. 파일이 루트 바깥이면(다른 드라이브 포함) null —
- * 동기화 대상이 아니라는 뜻이고, 호출하는 쪽에서 이 기능을 조용히 건너뛰어야 한다.
+ * Computes and normalizes the path relative to the sync root. Returns null if the file is outside
+ * the root (including on a different drive) — meaning it's not a sync target, and the caller should
+ * silently skip this feature for it.
  */
 export function computeRelativePath(syncRootAbsolutePath: string, fileAbsolutePath: string): string | null {
 	const rel = path.relative(syncRootAbsolutePath, fileAbsolutePath);

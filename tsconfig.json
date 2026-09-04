@@ -9,9 +9,10 @@
 		"sourceMap": true,
 		"rootDir": "src",
 		"strict": true,
-		// @types/qrcode의 타입 선언이 (안 쓰는) canvas 오버로드용으로 HTMLCanvasElement를 참조하는데,
-		// 이 프로젝트는 Node 전용이라 lib에 DOM이 없어 그 선언 자체가 타입 에러를 낸다 — 우리 코드가
-		// 아니라 서드파티 .d.ts 문제라 skipLibCheck로 우회한다(실제 사용하는 API는 canvas와 무관).
+		// @types/qrcode's type declarations reference HTMLCanvasElement for an (unused) canvas
+		// overload, but this project is Node-only with no DOM in lib, so that declaration alone
+		// throws a type error — it's a third-party .d.ts issue, not our code, so it's worked around
+		// with skipLibCheck (the API we actually use has nothing to do with canvas).
 		"skipLibCheck": true
 	}
 }

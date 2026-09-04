@@ -5,12 +5,13 @@ const SHARED_SECRET_KEY = 'moonkataReaderSync.sharedSecret';
 const VERIFIED_SECRET_KEY = 'moonkataReaderSync.verifiedSecret';
 
 /**
- * 공유 시크릿 저장/검증 + 상태 표시줄 배지.
+ * Stores/verifies the shared secret + the status bar badge.
  *
- * 동작 게이트는 "시크릿이 채워짐"이 아니라 "연결 테스트에 성공한 시크릿과 지금 저장된 시크릿이
- * 같음"이다(Android 앱의 supabaseSharedSecret/supabaseVerifiedSecret 비교와 같은 구조, §1 참고) —
- * 시크릿만 저장하고 테스트를 안 해봤거나 오타가 났으면 계속 실패할 요청을 조용히 반복하는 대신 기능이
- * 꺼진 채로 남는다.
+ * The gate is not "a secret is filled in" but "the secret that last passed a connection test
+ * matches what's currently stored" (the same structure as the Android app's
+ * supabaseSharedSecret/supabaseVerifiedSecret comparison, see §1) — rather than silently repeating
+ * requests that keep failing because the secret was only saved but never tested, or has a typo, the
+ * feature stays off.
  */
 export class SyncSecretManager {
 	private readonly statusBarItem: vscode.StatusBarItem;
@@ -29,7 +30,7 @@ export class SyncSecretManager {
 		return this.context.secrets.get(VERIFIED_SECRET_KEY);
 	}
 
-	/** 시크릿이 검증된 상태일 때만 클라이언트를 돌려준다 — 검증 안 됐으면 null(기능 비활성화). */
+	/** Only returns a client once the secret is verified — null (feature disabled) otherwise. */
 	async getVerifiedClient(): Promise<ReadingPositionSyncClient | null> {
 		const secret = await this.getSharedSecret();
 		if (!secret) {
@@ -42,28 +43,29 @@ export class SyncSecretManager {
 		return new ReadingPositionSyncClient(secret);
 	}
 
-	/** 시크릿을 저장만 하고 상태 표시줄을 갱신한다 — 검증(testConnection)은 호출부가 따로 트리거. */
+	/** Only stores the secret and refreshes the status bar — verification (testConnection) is triggered separately by the caller. */
 	async setSecret(value: string): Promise<void> {
 		await this.context.secrets.store(SHARED_SECRET_KEY, value);
 		await this.refreshStatusBar();
 	}
 
 	/**
-	 * 저장된 시크릿을 완전히 지운다 — "Moonkata Sync: 연결 해제". `context.secrets`는 확장을 재설치해도
-	 * 안 지워지는 OS 보안 저장소라서, 예전에 페어링해둔 상태가 계속 남아있을 수 있다. QR로 새로
-	 * 페어링하기 전에 깨끗한 상태에서 다시 시작하고 싶을 때(예: 새 기기로 처음부터 테스트) 쓴다 —
-	 * 이후 "QR로 연결"을 실행하면 재사용할 기존 시크릿이 없으니 진짜 새 시크릿을 생성한다.
+	 * Completely clears the stored secret — "Moonkata Sync: Disconnect". `context.secrets` is an
+	 * OS-level secure store that survives even reinstalling the extension, so an old pairing can
+	 * linger. Used when you want a clean slate before pairing fresh via QR (e.g. testing from
+	 * scratch on a new device) — running "Connect via QR" afterward has no existing secret to reuse,
+	 * so it generates a genuinely new one.
 	 */
 	async forgetSecret(): Promise<void> {
 		await this.context.secrets.delete(SHARED_SECRET_KEY);
 		await this.context.secrets.delete(VERIFIED_SECRET_KEY);
 		await this.refreshStatusBar();
-		vscode.window.showInformationMessage('저장된 시크릿을 지웠습니다 — 동기화가 꺼졌습니다.');
+		vscode.window.showInformationMessage('Cleared the stored secret — sync is now off.');
 	}
 
 	async promptForSecret(): Promise<void> {
 		const value = await vscode.window.showInputBox({
-			prompt: 'Moonkata Reader 앱 설정 화면에서 사용 중인 것과 같은 공유 시크릿을 입력하세요.',
+			prompt: 'Enter the same shared secret you\'re using in the Moonkata Reader app\'s settings screen.',
 			password: true,
 			ignoreFocusOut: true,
 		});
@@ -72,10 +74,10 @@ export class SyncSecretManager {
 		}
 		await this.setSecret(value);
 		const choice = await vscode.window.showInformationMessage(
-			'공유 시크릿을 저장했습니다. 아직 연결 테스트 전이라 동기화는 꺼져 있습니다.',
-			'지금 테스트',
+			'Shared secret saved. Sync is still off until you test the connection.',
+			'Test now',
 		);
-		if (choice === '지금 테스트') {
+		if (choice === 'Test now') {
 			await this.testConnection();
 		}
 	}
@@ -83,7 +85,7 @@ export class SyncSecretManager {
 	async testConnection(): Promise<void> {
 		const secret = await this.getSharedSecret();
 		if (!secret) {
-			const choice = await vscode.window.showWarningMessage('공유 시크릿이 아직 설정되지 않았습니다.', '지금 입력');
+			const choice = await vscode.window.showWarningMessage('No shared secret has been set yet.', 'Enter now');
 			if (choice) {
 				await this.promptForSecret();
 			}
@@ -93,9 +95,9 @@ export class SyncSecretManager {
 		const success = await client.testConnection();
 		if (success) {
 			await this.context.secrets.store(VERIFIED_SECRET_KEY, secret);
-			vscode.window.showInformationMessage('Moonkata Sync 연결 성공 — 읽기 위치 동기화가 켜졌습니다.');
+			vscode.window.showInformationMessage('Moonkata Sync connected — reading-position sync is on.');
 		} else {
-			vscode.window.showErrorMessage('Moonkata Sync 연결 실패 — 시크릿을 확인하세요.');
+			vscode.window.showErrorMessage('Moonkata Sync connection failed — check your secret.');
 		}
 		await this.refreshStatusBar();
 	}
@@ -105,13 +107,13 @@ export class SyncSecretManager {
 		const verified = await this.getVerifiedSecret();
 		if (secret && secret === verified) {
 			this.statusBarItem.text = '$(check) Moonkata Sync';
-			this.statusBarItem.tooltip = 'Moonkata Reader와 읽기 위치 동기화 연결됨 — 클릭해서 다시 테스트';
+			this.statusBarItem.tooltip = 'Connected to Moonkata Reader for reading-position sync — click to test again';
 			this.statusBarItem.backgroundColor = undefined;
 		} else {
 			this.statusBarItem.text = '$(circle-slash) Moonkata Sync';
 			this.statusBarItem.tooltip = secret
-				? '시크릿이 아직 검증되지 않았습니다 — 클릭해서 연결 테스트'
-				: '공유 시크릿이 설정되지 않았습니다 — 클릭해서 연결 테스트';
+				? 'Secret not verified yet — click to test the connection'
+				: 'No shared secret set — click to test the connection';
 			this.statusBarItem.backgroundColor = new vscode.ThemeColor('statusBarItem.warningBackground');
 		}
 		this.statusBarItem.show();

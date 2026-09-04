@@ -4,13 +4,14 @@ import * as QRCode from 'qrcode';
 import { SyncSecretManager } from './secretManager';
 
 /**
- * QR 페어링(android-moonkata-reader 저장소의 .docs/SYNC_MULTIUSER_PLAN.md 스테이지 5) — Android 앱
- * 퀵설정의 "QR로 연결"이 이 QR을 스캔해 공유 시크릿을 자동으로 채운다.
+ * QR pairing (see the android-moonkata-reader repo's .docs/SYNC_MULTIUSER_PLAN.md stage 5) — the
+ * Android app's quick-settings "Connect via QR" scans this QR to fill in the shared secret
+ * automatically.
  *
- * 이미 시크릿이 있으면 그대로 QR로 보여준다 — 매번 새로 만들면 이미 페어링된 다른 기기(예전에 스캔한
- * 폰)가 조용히 끊어지므로, 완전히 처음일 때만 새로 생성한다. 그래서 이 커맨드는 "재발급"이 아니라
- * "지금 시크릿을 다시 보여주기"에 가깝다 — 두 번째 폰을 추가로 페어링할 때도 안전하게 다시 실행할 수
- * 있다.
+ * If a secret already exists, it's shown as-is in the QR — generating a new one every time would
+ * silently disconnect any other already-paired device (e.g. a phone scanned earlier), so a new one
+ * is only ever generated the very first time. So this command is less a "reissue" and more "show the
+ * current secret again" — it's safe to run again to pair a second phone too.
  */
 export async function showPairingQr(secretManager: SyncSecretManager): Promise<void> {
 	let secret = await secretManager.getSharedSecret();
@@ -19,8 +20,9 @@ export async function showPairingQr(secretManager: SyncSecretManager): Promise<v
 		await secretManager.setSecret(secret);
 	}
 
-	// Android가 QR을 스캔하기 전에도 VSCode 쪽 상태 표시줄이 정확한 연결 상태를 보여주도록, 여기서도
-	// 한 번 검증해둔다(실패해도 QR 자체는 그대로 보여준다 — 오프라인일 수도 있으니).
+	// Verify here too, so the VS Code status bar shows the correct connection state even before
+	// Android scans the QR (the QR itself is still shown even if this fails — the PC could be
+	// offline, for instance).
 	void secretManager.testConnection();
 
 	const payload = JSON.stringify({ type: 'vscode_sync', secret });
@@ -28,7 +30,7 @@ export async function showPairingQr(secretManager: SyncSecretManager): Promise<v
 
 	const panel = vscode.window.createWebviewPanel(
 		'moonkataSyncPairingQr',
-		'Moonkata Sync — QR로 연결',
+		'Moonkata Sync — Connect via QR',
 		vscode.ViewColumn.Active,
 		{ enableScripts: false },
 	);
@@ -37,7 +39,7 @@ export async function showPairingQr(secretManager: SyncSecretManager): Promise<v
 
 function buildHtml(svg: string, secret: string): string {
 	return /* html */ `<!DOCTYPE html>
-<html lang="ko">
+<html lang="en">
 <head>
 <meta charset="UTF-8" />
 <style>
@@ -63,10 +65,10 @@ function buildHtml(svg: string, secret: string): string {
 </style>
 </head>
 <body>
-	<h2>Moonkata Reader 앱에서 스캔하세요</h2>
-	<p>퀵설정 시트 → VSCode 읽기 위치 동기화 → "QR로 연결"</p>
+	<h2>Scan this in the Moonkata Reader app</h2>
+	<p>Quick settings sheet → VSCode reading-position sync → "Connect via QR"</p>
 	<div class="qr">${svg}</div>
-	<p>카메라를 쓸 수 없다면 이 시크릿을 대신 직접 입력해도 됩니다:</p>
+	<p>If you can't use the camera, you can enter this secret manually instead:</p>
 	<p><code>${escapeHtml(secret)}</code></p>
 </body>
 </html>`;

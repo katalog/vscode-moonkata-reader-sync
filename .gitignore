@@ -3,6 +3,6 @@ out/
 *.vsix
 .vscode-test/
 
-# scripts/generate-supabase-config.js가 매 빌드 시 생성 — SYNC_MULTIUSER_PLAN.md 스테이지 3 참고
+# Generated on every build by scripts/generate-supabase-config.js — see SYNC_MULTIUSER_PLAN.md stage 3
 src/supabaseConfig.ts
 .env.local

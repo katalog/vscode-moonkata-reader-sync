@@ -3,7 +3,7 @@ import * as vscode from 'vscode';
 const CONFIG_SECTION = 'moonkataReaderSync';
 const CONFIG_KEY = 'syncRootPath';
 
-/** 사용자가 폴더 선택창을 취소했을 때, 같은 세션에서 .txt 파일 열 때마다 다시 물어보지 않기 위한 플래그. */
+/** Flag so that once the user cancels the folder picker, opening another .txt file in the same session doesn't ask again. */
 let declinedThisSession = false;
 
 export function getSyncRoot(): string | undefined {
@@ -16,8 +16,8 @@ export async function promptForSyncRoot(defaultUri?: vscode.Uri): Promise<string
 		canSelectFolders: true,
 		canSelectFiles: false,
 		canSelectMany: false,
-		openLabel: '동기화 루트로 선택',
-		title: 'Moonkata Reader와 공유하는 동기화 루트 폴더를 선택하세요',
+		openLabel: 'Select as Sync Root',
+		title: 'Select the sync root folder shared with Moonkata Reader',
 		defaultUri,
 	});
 	if (!picked || picked.length === 0) {
@@ -28,7 +28,7 @@ export async function promptForSyncRoot(defaultUri?: vscode.Uri): Promise<string
 	return chosen;
 }
 
-/** 설정이 비어있으면 워크스페이스 폴더를 기본값으로 제안하며 물어보고, 선택한 값을 저장 후 반환한다. */
+/** If the setting is empty, prompts with the workspace folder suggested as the default, saves the chosen value, and returns it. */
 export async function ensureSyncRoot(): Promise<string | undefined> {
 	const existing = getSyncRoot();
 	if (existing) {

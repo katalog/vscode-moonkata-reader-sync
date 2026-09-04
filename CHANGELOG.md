@@ -6,10 +6,13 @@ Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how 
 
 ## [1.1.0]
 
-- 원격 위치가 근소하게(500자 이하) 앞설 때는 이동 팝업을 띄우지 않도록 데드존 추가 — 커서 오프셋과
-  페이지 오프셋의 단위 차이로 생기는 오탐 방지.
-- 이동 팝업에 목표 위치뿐 아니라 현재 기기의 진행률도 같이 표시.
-- 이동 팝업을 modal 다이얼로그로 변경 — 화면 중앙에 뜨며 포커스를 가져가 Enter로 바로 이동 가능.
+- Added a dead zone so the jump popup doesn't fire when the remote position is only slightly ahead
+  (500 characters or less) — avoids false positives from the unit mismatch between cursor offset and
+  page offset.
+- The jump popup now shows the current device's progress alongside the target position, not just the
+  target.
+- Changed the jump popup to a modal dialog — it appears centered and takes focus, so Enter jumps
+  immediately.
 
 ## [1.0.0]
 

@@ -26,10 +26,10 @@ the PC file-sync companion is a separate repo, [go-moonkata-reader-sync-server](
 
 ## Usage
 
-1. Run **Moonkata Sync: 공유 시크릿 설정** and paste in the same shared secret configured in the
+1. Run **Moonkata Sync: Set Shared Secret** and paste in the same shared secret configured in the
    Moonkata Reader Android app's settings.
-2. Run **Moonkata Sync: 연결 테스트**. On success, the status bar shows `✓ Moonkata Sync` — that's
-   the only thing that actually turns the feature on (entering the secret alone does not).
+2. Run **Moonkata Sync: Test Connection**. On success, the status bar shows `✓ Moonkata Sync` —
+   that's the only thing that actually turns the feature on (entering the secret alone does not).
 3. Open a `.txt` file inside your synced folder. The first time, you'll be asked to pick the sync
    root folder (the one your Android app also opened as its library) — after that it's remembered.
 4. Read normally. If the Android app is further ahead, you'll get a prompt to jump to that position.
@@ -41,7 +41,7 @@ the PC file-sync companion is a separate repo, [go-moonkata-reader-sync-server](
 | `moonkataReaderSync.syncRootPath` | Absolute path to the folder shared with the Moonkata Reader app | `""` (prompted on first `.txt` file) |
 
 The shared secret itself isn't a setting — it's stored via VS Code's `SecretStorage` (OS credential
-store), entered through the **공유 시크릿 설정** command.
+store), entered through the **Set Shared Secret** command.
 
 ## How it works
 

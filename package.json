@@ -2,7 +2,7 @@
   "name": "moonkata-reader-sync",
   "displayName": "Moonkata Reader Sync",
   "description": "Sync reading position between VS Code and the Moonkata Reader Android app via Supabase",
-  "version": "1.5.1",
+  "version": "1.7.0",
   "publisher": "katalog",
   "repository": {
     "type": "git",
@@ -35,30 +35,30 @@
         "moonkataReaderSync.syncRootPath": {
           "type": "string",
           "default": "",
-          "description": "Moonkata Reader 앱과 공유하는 동기화 루트 폴더의 절대경로. 비워두면 .txt 파일을 처음 열 때 폴더 선택창으로 물어봅니다."
+          "description": "Absolute path to the sync root folder shared with the Moonkata Reader app. If left empty, you'll be prompted with a folder picker the first time you open a .txt file."
         }
       }
     },
     "commands": [
       {
         "command": "moonkata-reader-sync.setSharedSecret",
-        "title": "Moonkata Sync: 공유 시크릿 설정"
+        "title": "Moonkata Sync: Set Shared Secret"
       },
       {
         "command": "moonkata-reader-sync.testConnection",
-        "title": "Moonkata Sync: 연결 테스트"
+        "title": "Moonkata Sync: Test Connection"
       },
       {
         "command": "moonkata-reader-sync.setSyncRoot",
-        "title": "Moonkata Sync: 동기화 루트 폴더 설정"
+        "title": "Moonkata Sync: Set Sync Root Folder"
       },
       {
         "command": "moonkata-reader-sync.showPairingQr",
-        "title": "Moonkata Sync: QR로 연결"
+        "title": "Moonkata Sync: Connect via QR"
       },
       {
         "command": "moonkata-reader-sync.forgetSecret",
-        "title": "Moonkata Sync: 연결 해제"
+        "title": "Moonkata Sync: Disconnect"
       }
     ]
   },

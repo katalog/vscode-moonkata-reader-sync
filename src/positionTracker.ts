@@ -5,23 +5,26 @@ import { SyncSecretManager } from './secretManager';
 import { checkAndOfferUtf8Conversion } from './encoding';
 
 /**
- * 같은 위치에서 이만큼(5분) 안 움직이면 원격에도 체크포인트를 남긴다 — Android 쪽과 동일 값.
- * 원래 1분이었는데, 사용자가 늘어날 걸 감안해 화면 이탈 시 즉시 반영 경로는 그대로 두고 이 간격만
- * 늘려 원격 쓰기 빈도를 줄였다(android-moonkata-reader 저장소의 SYNC_MULTIUSER_PLAN.md 스테이지 2).
+ * A checkpoint is also pushed to the remote if the cursor stays at the same spot for at least this
+ * long (5 minutes) — same value as the Android side. This used to be 1 minute; anticipating more
+ * users, the immediate-on-screen-exit path was left as-is and only this interval was widened, to cut
+ * down on remote write frequency (see the android-moonkata-reader repo's SYNC_MULTIUSER_PLAN.md
+ * stage 2).
  */
 const CHECKPOINT_IDLE_MS = 300_000;
 
 /**
- * 원격이 이만큼(문자 수) 넘게 앞서 있을 때만 "더 읽으셨어요" 팝업을 띄운다 — VSCode 커서 오프셋과
- * 안드로이드 페이지 오프셋은 애초에 가리키는 단위가 달라서(문자 단위 vs 페이지 시작 지점) 실제로는
- * 같은 곳을 읽고 있어도 수백 자 정도 어긋날 수 있다. Android 쪽과 동일 값.
+ * The "you've read further" popup only shows once the remote is at least this many characters
+ * ahead — VS Code's cursor offset and the Android app's page offset point to different units to
+ * begin with (character position vs. page-start position), so even reading the exact same spot can
+ * legitimately differ by a few hundred characters. Same value as the Android side.
  */
 const MIN_OFFSET_DIFF_TO_NOTIFY = 500;
 
 /**
- * 원격 조회(checkRemote) 최소 간격 — 탭 전환/창 포커스가 짧은 시간 안에 반복되면 그때마다 조회가
- * 나갈 수 있어, 마지막 조회 후 이 시간 안에는 다시 조회하지 않는다. Android 쪽과 동일 값
- * (SYNC_MULTIUSER_PLAN.md 스테이지 2).
+ * Minimum interval between remote lookups (checkRemote) — switching tabs or window focus repeatedly
+ * within a short time could otherwise trigger a lookup every time, so no new lookup fires within
+ * this long after the last one. Same value as the Android side (SYNC_MULTIUSER_PLAN.md stage 2).
  */
 const REMOTE_FETCH_COOLDOWN_MS = 30_000;
 
@@ -34,18 +37,20 @@ interface DocState {
 }
 
 /**
- * 읽기 위치 추적 + 원격(Supabase) 동기화 트리거 (.docs/VSCODE_SYNC_PLAN.md §5).
+ * Reading-position tracking + remote (Supabase) sync trigger (.docs/VSCODE_SYNC_PLAN.md §5).
  *
- * 커서가 움직일 때마다 매번 올리면 낭비라, 아래 경로로만 원격에 반영한다 — Android 앱의 체크포인트 +
- * 화면 이탈/복귀 모델과 대칭:
- * 1) 같은 위치에서 CHECKPOINT_IDLE_MS(5분) 이상 머무르면(체크포인트)
- * 2) 이 파일이 편집창에서 안 보이게 되면(onDidChangeVisibleTextEditors) — 탭 전환/닫기
- * 3) VSCode 창이 OS 포커스를 잃으면(onDidChangeWindowState, focused: false) — 알트탭, 최소화, Win+D,
- *    가상 데스크톱 전환 전부 포함. (2)와 (3)을 둘 다 걸어야 하는 이유는 서로 다른 레이어라서다 —
- *    분할 편집 중 포커스만 옮기는 건 (2)로 안 잡히고(파일이 여전히 보임), 창을 최소화하는 건 (3) 없인
- *    안 잡힌다(visibleTextEditors는 안 바뀜).
+ * Pushing on every cursor move would be wasteful, so the remote only gets updated through these
+ * paths — mirroring the Android app's checkpoint + screen-exit/return model:
+ * 1) Staying at the same position for at least CHECKPOINT_IDLE_MS (5 min) — a checkpoint
+ * 2) This file stops being visible in an editor pane (onDidChangeVisibleTextEditors) — switching or closing a tab
+ * 3) The VS Code window loses OS focus (onDidChangeWindowState, focused: false) — covers alt-tab,
+ *    minimize, Win+D, switching virtual desktops, etc. Both (2) and (3) are needed because they're
+ *    different layers — moving focus alone during a split-editor session isn't caught by (2) (the
+ *    file is still visible), and minimizing the window isn't caught without (3) (visibleTextEditors
+ *    doesn't change).
  *
- * 읽기(비교)는 반대 방향 — 파일이 새로 보이게 되거나(최초로 열 때 포함) 창이 다시 포커스를 얻을 때.
+ * Reading (comparing) goes the opposite direction — when a file newly becomes visible (including the
+ * first time it's opened) or the window regains focus.
  */
 export class PositionTracker {
 	private readonly states = new Map<string, DocState>();
@@ -62,12 +67,12 @@ export class PositionTracker {
 		);
 	}
 
-	/** 확장 활성화 시 한 번 호출 — 이미 열려 있는 편집기들을 "새로 보이게 됨"으로 취급해 초기 확인을 겸한다. */
+	/** Called once when the extension activates — treats already-open editors as "newly visible" too, doubling as the initial check. */
 	async initialize(): Promise<void> {
 		await this.onVisibleEditorsChanged(vscode.window.visibleTextEditors);
 	}
 
-	/** 창 포커스 상실/확장 비활성화 시 최선노력으로 즉시 반영. */
+	/** Best-effort immediate flush on window-focus loss / extension deactivation. */
 	async flushAll(): Promise<void> {
 		for (const fsPath of this.visiblePaths) {
 			await this.flushNow(fsPath);
@@ -98,14 +103,14 @@ export class PositionTracker {
 		}
 		const newPaths = new Set(relevant.map((r) => r.editor.document.uri.fsPath));
 
-		// 안 보이게 된 파일 — 체크포인트를 기다리지 않고 즉시 원격 반영
+		// Files that stopped being visible — push to the remote immediately, without waiting for a checkpoint
 		for (const fsPath of this.visiblePaths) {
 			if (!newPaths.has(fsPath)) {
 				await this.flushNow(fsPath);
 			}
 		}
 
-		// 새로 보이게 된 파일(최초로 여는 경우 포함) — 인코딩 점검 후 원격 확인
+		// Files that newly became visible (including the first time opened) — check encoding, then check the remote
 		for (const { editor, relativePath } of relevant) {
 			const fsPath = editor.document.uri.fsPath;
 			if (!this.visiblePaths.has(fsPath)) {
@@ -204,15 +209,16 @@ export class PositionTracker {
 		const total = document.getText().length;
 		const currentPercent = total > 0 ? ((currentOffset / total) * 100).toFixed(1) : '0.0';
 		const remotePercent = total > 0 ? ((remoteOffset / total) * 100).toFixed(1) : '0.0';
-		// modal로 띄우는 이유: 기본(토스트) 알림은 화면 우측 하단에 포커스 없이 뜨기 때문에 Enter로
-		// 확인이 안 되고 마우스로 직접 눌러야 한다. modal은 화면 중앙에 뜨면서 바로 포커스를 가져가서
-		// Enter가 기본 액션('이동')을 누르는 것과 같아지고, Esc로 취소도 된다.
+		// Shown as a modal because the default (toast) notification appears unfocused in the bottom
+		// right, so Enter can't confirm it — it has to be clicked with the mouse. A modal appears
+		// centered and takes focus immediately, so Enter acts as the default action ('Jump'), and Esc
+		// cancels it too.
 		const choice = await vscode.window.showInformationMessage(
-			`현재 ${currentPercent}% 읽는 중 — 다른 기기는 ${remotePercent}%까지 읽으셨네요. 그 위치로 이동할까요?`,
+			`You're at ${currentPercent}% — another device has reached ${remotePercent}%. Jump to that position?`,
 			{ modal: true },
-			'이동',
+			'Jump',
 		);
-		if (choice === '이동') {
+		if (choice === 'Jump') {
 			await this.jumpTo(document, remoteOffset);
 		}
 	}
